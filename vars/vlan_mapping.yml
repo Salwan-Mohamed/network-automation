@@ -2,13 +2,8 @@ vlan_mapping:
   phone: 528
   cam: 536
   printer: 531
-  pc: 509
-  projector: 532
-  is: 12
-  zero_client: 541
-  ap: 526
-  thin_client: 546
-  digital: 533
-  
-  
+  pc: 80
+  projector: 533
+  non: shutdown
+
 
