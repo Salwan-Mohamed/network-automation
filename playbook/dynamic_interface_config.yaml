@@ -1,0 +1,110 @@
+---
+- name: Resolve Switch Based on Room Number
+  hosts: localhost
+  gather_facts: no
+  vars_files:
+    - switch_mapping.yml
+    - interface_descriptions.yml
+    - vlan_mapping.yml
+    - port_mapping.yml
+
+  tasks:
+    - name: Find Switch for Given Room
+      set_fact:
+        switch_name: "{{ item.key }}"
+      loop: "{{ switch_mapping | dict2items }}"
+      when: room in item.value
+
+    - name: Fail if No Matching Switch is Found
+      fail:
+        msg: "No switch found for room {{ room }}. Check switch_mapping.yml"
+      when: switch_name is not defined
+
+    - name: Get Interface Description
+      set_fact:
+        interface_description: "{{ interface_descriptions[room] }}"
+
+    - name: Add Resolved Switch to Inventory
+      add_host:
+        name: "{{ switch_name }}"
+        groups: dynamic_switches
+        interface_description: "{{ interface_description }}"
+
+- name: Configure Cisco Switch Port Based on Device Type and Configuration Cases
+  hosts: dynamic_switches
+  gather_facts: no
+  vars_files:
+    - vlan_mapping.yml
+
+  tasks:
+    - name: Reset the interface to default configuration
+      cisco.ios.ios_config:
+        lines:
+          - "default interface GigabitEthernet{{ port_number }}"
+
+    - name: Configure interface for phone only (Case 1)
+      when: device_type == "phone"
+      cisco.ios.ios_config:
+        lines:
+          - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
+          - "switchport mode access"
+          - "switchport voice vlan {{ vlan_mapping.phone }}"
+          - "duplex full"
+          - "switchport port-security mac-address sticky"
+          - "switchport port-security maximum 1"
+          - "switchport port-security"
+          - "no shutdown"
+        parents: "interface GigabitEthernet{{ port_number }}"
+
+    - name: Configure interface for non-phone devices (Case 2)
+      when:
+        - device_type != "phone"
+        - device_type != "none"
+        - (second_device_type is not defined) or (second_device_type == "none")
+      cisco.ios.ios_config:
+        lines:
+          - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
+          - "switchport mode access"
+          - "switchport access vlan {{ vlan_mapping[device_type] }}"
+          - "duplex full"
+          - "switchport port-security mac-address sticky"
+          - "switchport port-security maximum 1"
+          - "switchport port-security"
+          - "no shutdown"
+        parents: "interface GigabitEthernet{{ port_number }}"
+
+    - name: Configure interface for device with phone (Case 3)
+      when:
+        - second_device_type is defined
+        - second_device_type == "phone"
+      cisco.ios.ios_config:
+        lines:
+          - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
+          - "switchport mode access"
+          - "switchport access vlan {{ vlan_mapping[device_type] }}"
+          - "switchport voice vlan {{ vlan_mapping.phone }}"
+          - "duplex full"
+          - "switchport port-security mac-address sticky"
+          - "switchport port-security maximum 2"
+          - "switchport port-security"
+          - "no shutdown"
+        parents: "interface GigabitEthernet{{ port_number }}"
+
+    - name: Configure interface for none device (Case 4)
+      when: 
+        - device_type == "none"
+        - (second_device_type is not defined) or (second_device_type == "none")
+      cisco.ios.ios_config:
+        lines:
+          - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
+          - "switchport mode access"          # Added this line
+          - "duplex full"
+          - "switchport port-security mac-address sticky"
+          - "switchport port-security maximum 1"
+          - "switchport port-security"
+          - "shutdown"
+        parents: "interface GigabitEthernet{{ port_number }}"
+
+    - name: Save configuration
+      cisco.ios.ios_config:
+        save_when: always
