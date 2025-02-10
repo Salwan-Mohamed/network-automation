@@ -1,5 +1,5 @@
 port_mapping:
-  AG2:
+  roomAG2:
     1/0/34: phone
-  AG11:
+  roomAG11:
     1/0/20: cam
