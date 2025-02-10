@@ -4,6 +4,7 @@ vlan_mapping:
   printer: 531
   pc: 80
   projector: 533
+  is: 12
   zero_client: 541
   printer: 531
   non: shutdown
