@@ -1,9 +1,0 @@
-vlan_mapping:
-  phone: 528
-  cam: 536
-  printer: 531
-  pc: 80
-  projector: 533
-  non: shutdown
-
-
