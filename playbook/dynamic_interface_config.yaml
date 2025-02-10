@@ -52,14 +52,15 @@
           - "duplex full"
           - "switchport port-security mac-address sticky"
           - "switchport port-security maximum 1"
+          - "switchport port-security"
           - "no shutdown"
         parents: "interface GigabitEthernet{{ port_number }}"
 
     - name: Configure interface for non-phone devices (Case 2)
-      when: 
+      when:
         - device_type != "phone"
         - device_type != "none"
-        - second_device_type is not defined
+        - (second_device_type is not defined) or (second_device_type == "none")
       cisco.ios.ios_config:
         lines:
           - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
@@ -68,11 +69,12 @@
           - "duplex full"
           - "switchport port-security mac-address sticky"
           - "switchport port-security maximum 1"
+          - "switchport port-security"
           - "no shutdown"
         parents: "interface GigabitEthernet{{ port_number }}"
 
     - name: Configure interface for device with phone (Case 3)
-      when: 
+      when:
         - second_device_type is defined
         - second_device_type == "phone"
       cisco.ios.ios_config:
@@ -84,17 +86,22 @@
           - "duplex full"
           - "switchport port-security mac-address sticky"
           - "switchport port-security maximum 2"
+          - "switchport port-security"
           - "no shutdown"
         parents: "interface GigabitEthernet{{ port_number }}"
 
-    - name: Configure interface for non-device (Case 4)
-      when: device_type == "none"
+    - name: Configure interface for none device (Case 4)
+      when: 
+        - device_type == "none"
+        - (second_device_type is not defined) or (second_device_type == "none")
       cisco.ios.ios_config:
         lines:
           - "description {{ hostvars[inventory_hostname]['interface_description'] }}"
+          - "switchport mode access"          # Added this line
           - "duplex full"
           - "switchport port-security mac-address sticky"
           - "switchport port-security maximum 1"
+          - "switchport port-security"
           - "shutdown"
         parents: "interface GigabitEthernet{{ port_number }}"
 
