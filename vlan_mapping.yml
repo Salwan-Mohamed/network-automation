@@ -5,5 +5,7 @@ vlan_mapping:
   pc: 80
   projector: 533
   non: shutdown
+  is: 12
+  zero_client: 541
 
 
