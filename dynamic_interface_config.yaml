@@ -58,7 +58,7 @@
     - name: Configure interface for non-phone devices (Case 2)
       when: 
         - device_type != "phone"
-        - device_type != "none"
+        - device_type == "none"
         - second_device_type is not defined
       cisco.ios.ios_config:
         lines:
